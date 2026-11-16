@@ -1,0 +1,1574 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JETSON LAB SMK - Media Pembelajaran Sistem Embedded, AI & Robotika</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tone.js untuk Efek Suara Interaktif Tanpa URL Eksternal -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        nvidia: {
+                            DEFAULT: '#76B900',
+                            dark: '#5a8f00',
+                            glow: '#8ee000'
+                        },
+                        cyber: {
+                            bg: '#0b1120',
+                            card: '#111827',
+                            surface: '#1e293b',
+                            border: '#334155'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Pola Latar Belakang Grid Sirkuit Elektronik */
+        .circuit-grid {
+            background-color: #0b1120;
+            background-image: 
+                radial-gradient(rgba(118, 185, 0, 0.12) 1px, transparent 1px),
+                linear-gradient(to right, rgba(30, 41, 59, 0.4) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(30, 41, 59, 0.4) 1px, transparent 1px);
+            background-size: 24px 24px, 48px 48px, 48px 48px;
+        }
+
+        /* Animasi Denyut Hotspot Hardware */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.85); opacity: 0.9; }
+            70% { transform: scale(1.45); opacity: 0; }
+            100% { transform: scale(1.45); opacity: 0; }
+        }
+        .hotspot-pulse {
+            transform-box: fill-box;
+            transform-origin: center;
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+
+        /* Animasi Aliran Data Pipeline */
+        @keyframes flow-dash {
+            to { stroke-dashoffset: -24; }
+        }
+        .data-flow-line {
+            stroke-dasharray: 6 6;
+            animation: flow-dash 1s linear infinite;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #76B900;
+        }
+
+        /* Canvas Responsif */
+        #simCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Print Styling untuk Kartu Pencapaian Siswa */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #certificate-card, #certificate-card * {
+                visibility: visible;
+            }
+            #certificate-card {
+                position: fixed;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: #0f172a !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body class="circuit-grid text-slate-100 min-h-screen flex flex-col antialiased selection:bg-nvidia selection:text-slate-950">
+
+    <!-- Toast Notification Container (Pengganti alert()) -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-sm w-full px-4 sm:px-0"></div>
+
+    <!-- Header & Status Gamifikasi Siswa -->
+    <header class="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+            <!-- Brand & Jurusan -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-nvidia/20 border border-nvidia flex items-center justify-center shadow-md shadow-nvidia/10">
+                    <svg class="w-6 h-6 text-nvidia" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-extrabold text-base sm:text-lg tracking-tight text-white">JETSON LAB <span class="text-nvidia">SMK</span></h1>
+                        <span class="hidden sm:inline-block text-[11px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-cyan-400 border border-cyan-500/30">Teknik Elektronika Industri</span>
+                    </div>
+                    <p class="text-xs text-slate-400">Sistem Embedded, Edge AI & Robotika Industri</p>
+                </div>
+            </div>
+
+            <!-- Progress XP & Kontrol Suara -->
+            <div class="flex items-center gap-3 sm:gap-4 ml-auto">
+                <div class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 flex items-center gap-3">
+                    <div>
+                        <div class="flex items-center justify-between gap-4 text-xs mb-1">
+                            <span id="student-rank" class="font-semibold text-nvidia">Level 1: Teknisi Pemula</span>
+                            <span class="font-mono text-amber-400 font-bold"><span id="xp-display">0</span> XP</span>
+                        </div>
+                        <div class="w-28 sm:w-36 h-2 bg-slate-800 rounded-full overflow-hidden">
+                            <div id="xp-bar" class="h-full bg-gradient-to-r from-nvidia to-cyan-400 transition-all duration-500" style="width: 5%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tombol Toggle Efek Suara -->
+                <button id="btn-sound" onclick="toggleSound()" title="Aktifkan/Matikan Efek Suara" class="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 transition active:scale-95">
+                    <svg id="icon-sound-on" class="w-5 h-5 text-nvidia" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
+                    </svg>
+                    <svg id="icon-sound-off" class="w-5 h-5 text-slate-500 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15zM17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Navigasi 4 Tahap Pembelajaran -->
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 pb-2.5 overflow-x-auto">
+            <div class="flex items-center gap-2 min-w-max">
+                <button onclick="switchTab('mengenal')" id="tab-mengenal" class="nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition bg-nvidia text-slate-950 shadow-md shadow-nvidia/20">
+                    <span class="w-5 h-5 rounded-full bg-slate-950/20 flex items-center justify-center text-xs font-bold">1</span>
+                    <span>Mengenal Perangkat</span>
+                </button>
+                <button onclick="switchTab('memahami')" id="tab-memahami" class="nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800">
+                    <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-xs font-bold">2</span>
+                    <span>Memahami Konsep AI & Kontrol</span>
+                </button>
+                <button onclick="switchTab('mengaplikasi')" id="tab-mengaplikasi" class="nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800">
+                    <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-xs font-bold">3</span>
+                    <span>Mengaplikasi (Simulasi Lab)</span>
+                    <span class="px-1.5 py-0.5 text-[10px] font-mono uppercase rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">Praktik</span>
+                </button>
+                <button onclick="switchTab('evaluasi')" id="tab-evaluasi" class="nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800">
+                    <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-xs font-bold">4</span>
+                    <span>Misi & Evaluasi</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Konten Utama -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
+
+        <!-- ===================================================================== -->
+        <!-- TAHAP 1: MENGENAL PERANGKAT (EKSPLORASI HARDWARE JETSON ORIN NANO)   -->
+        <!-- ===================================================================== -->
+        <section id="section-mengenal" class="tab-section space-y-6">
+            <!-- Banner Pengantar -->
+            <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-2xl p-5 sm:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="space-y-1.5 max-w-3xl">
+                    <span class="inline-flex items-center gap-1.5 text-xs font-mono font-semibold text-nvidia bg-nvidia/10 border border-nvidia/30 px-2.5 py-1 rounded-full">
+                        TAHAP 1 • PENGENALAN PERANGKAT KERAS (HARDWARE)
+                    </span>
+                    <h2 class="text-xl sm:text-2xl font-bold text-white">Bedah Arsitektur NVIDIA Jetson Orin Nano</h2>
+                    <p class="text-sm text-slate-300 leading-relaxed">
+                        Halo calon insinyur elektronika! Klik pada <span class="text-amber-400 font-semibold">titik-titik komponen menyala</span> pada papan sirkuit Jetson Orin Nano Developer Kit di bawah ini untuk mempelajari fungsi setiap antarmuka dalam otomasi industri dan robotika.
+                    </p>
+                </div>
+                <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 min-w-[190px] text-center">
+                    <div class="text-xs text-slate-400 mb-1">Eksplorasi Komponen</div>
+                    <div class="text-2xl font-extrabold font-mono text-nvidia"><span id="explored-count">1</span> / 8</div>
+                    <div class="text-[11px] text-cyan-400 mt-1">+15 XP per komponen baru</div>
+                </div>
+            </div>
+
+            <!-- Grid Eksplorasi Board Interaktif + Detail Kartu -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <!-- Kolom Kiri: Diagram Interaktif SVG Jetson Orin Nano -->
+                <div class="lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-mono text-slate-400 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-nvidia animate-ping"></span>
+                            JETSON ORIN NANO DEVELOPER KIT (TOP VIEW)
+                        </span>
+                        <span class="text-xs text-slate-400">Klik pin/modul untuk inspeksi</span>
+                    </div>
+
+                    <!-- SVG Papan Sirkuit Jetson Orin Nano -->
+                    <div class="relative w-full bg-slate-950 rounded-xl border border-slate-800 p-2 sm:p-4 overflow-hidden">
+                        <svg viewBox="0 0 640 430" class="w-full h-auto select-none" role="img" aria-label="Diagram Interaktif NVIDIA Jetson Orin Nano">
+                            <!-- PCB Carrier Board Utama -->
+                            <rect x="45" y="35" width="550" height="360" rx="18" fill="#131c2e" stroke="#334155" stroke-width="3"/>
+                            <!-- Jalur Tembaga Dekoratif -->
+                            <path d="M70 100 H150 L170 120 H250 M70 320 H180 L210 290 H300 M480 90 V160 L510 190 H570" stroke="#1e293b" stroke-width="2" fill="none"/>
+                            
+                            <!-- Lubang Mounting PCB -->
+                            <circle cx="65" cy="55" r="7" fill="#0b1120" stroke="#eab308" stroke-width="2.5"/>
+                            <circle cx="575" cy="55" r="7" fill="#0b1120" stroke="#eab308" stroke-width="2.5"/>
+                            <circle cx="65" cy="375" r="7" fill="#0b1120" stroke="#eab308" stroke-width="2.5"/>
+                            <circle cx="575" cy="375" r="7" fill="#0b1120" stroke="#eab308" stroke-width="2.5"/>
+
+                            <!-- 1. 40-Pin GPIO Header (Atas) -->
+                            <g class="cursor-pointer group" onclick="selectHardware('gpio')">
+                                <rect x="135" y="42" width="290" height="28" rx="4" fill="#0f172a" stroke="#76B900" stroke-width="2"/>
+                                <!-- Baris Pin Kuning/Emas -->
+                                <g fill="#facc15">
+                                    <circle cx="150" cy="51" r="2.5"/><circle cx="164" cy="51" r="2.5"/><circle cx="178" cy="51" r="2.5"/><circle cx="192" cy="51" r="2.5"/>
+                                    <circle cx="206" cy="51" r="2.5"/><circle cx="220" cy="51" r="2.5"/><circle cx="234" cy="51" r="2.5"/><circle cx="248" cy="51" r="2.5"/>
+                                    <circle cx="262" cy="51" r="2.5"/><circle cx="276" cy="51" r="2.5"/><circle cx="290" cy="51" r="2.5"/><circle cx="304" cy="51" r="2.5"/>
+                                    <circle cx="318" cy="51" r="2.5"/><circle cx="332" cy="51" r="2.5"/><circle cx="346" cy="51" r="2.5"/><circle cx="360" cy="51" r="2.5"/>
+                                    <circle cx="374" cy="51" r="2.5"/><circle cx="388" cy="51" r="2.5"/><circle cx="402" cy="51" r="2.5"/><circle cx="412" cy="51" r="2.5"/>
+                                    
+                                    <circle cx="150" cy="61" r="2.5"/><circle cx="164" cy="61" r="2.5"/><circle cx="178" cy="61" r="2.5"/><circle cx="192" cy="61" r="2.5"/>
+                                    <circle cx="206" cy="61" r="2.5"/><circle cx="220" cy="61" r="2.5"/><circle cx="234" cy="61" r="2.5"/><circle cx="248" cy="61" r="2.5"/>
+                                    <circle cx="262" cy="61" r="2.5"/><circle cx="276" cy="61" r="2.5"/><circle cx="290" cy="61" r="2.5"/><circle cx="304" cy="61" r="2.5"/>
+                                    <circle cx="318" cy="61" r="2.5"/><circle cx="332" cy="61" r="2.5"/><circle cx="346" cy="61" r="2.5"/><circle cx="360" cy="61" r="2.5"/>
+                                    <circle cx="374" cy="61" r="2.5"/><circle cx="388" cy="61" r="2.5"/><circle cx="402" cy="61" r="2.5"/><circle cx="412" cy="61" r="2.5"/>
+                                </g>
+                                <text x="280" y="83" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="JetBrains Mono">40-PIN GPIO HEADER (3.3V)</text>
+                                <circle cx="280" cy="56" r="14" fill="none" stroke="#76B900" stroke-width="2" class="hotspot-pulse"/>
+                                <circle cx="280" cy="56" r="7" fill="#76B900"/>
+                            </g>
+
+                            <!-- 2. Modul Utama Jetson Orin Nano + Heatsink & Kipas (Tengah) -->
+                            <g class="cursor-pointer" onclick="selectHardware('som')">
+                                <rect x="155" y="105" width="250" height="185" rx="12" fill="#1e293b" stroke="#06b6d4" stroke-width="2.5"/>
+                                <!-- Sirip Heatsink -->
+                                <g stroke="#334155" stroke-width="3">
+                                    <line x1="170" y1="120" x2="390" y2="120"/><line x1="170" y1="132" x2="390" y2="132"/>
+                                    <line x1="170" y1="144" x2="390" y2="144"/><line x1="170" y1="156" x2="390" y2="156"/>
+                                    <line x1="170" y1="238" x2="390" y2="238"/><line x1="170" y1="250" x2="390" y2="250"/>
+                                    <line x1="170" y1="262" x2="390" y2="262"/><line x1="170" y1="274" x2="390" y2="274"/>
+                                </g>
+                                <!-- Kipas Pendingin Tengah -->
+                                <circle cx="280" cy="197" r="54" fill="#0f172a" stroke="#475569" stroke-width="3"/>
+                                <circle cx="280" cy="197" r="20" fill="#1e293b" stroke="#76B900" stroke-width="2"/>
+                                <text x="280" y="201" text-anchor="middle" fill="#76B900" font-size="9" font-weight="bold" font-family="JetBrains Mono">ORIN</text>
+                                <text x="280" y="305" text-anchor="middle" fill="#38bdf8" font-size="11" font-weight="bold" font-family="JetBrains Mono">MODUL SOM (GPU AMPERE + CPU ARM)</text>
+                                <circle cx="280" cy="197" r="18" fill="none" stroke="#06b6d4" stroke-width="2.5" class="hotspot-pulse"/>
+                                <circle cx="280" cy="197" r="7" fill="#06b6d4"/>
+                            </g>
+
+                            <!-- 3. Dual MIPI CSI-2 Camera Connectors (Kanan) -->
+                            <g class="cursor-pointer" onclick="selectHardware('csi')">
+                                <rect x="550" y="110" width="36" height="65" rx="4" fill="#0f172a" stroke="#f59e0b" stroke-width="2"/>
+                                <rect x="550" y="195" width="36" height="65" rx="4" fill="#0f172a" stroke="#f59e0b" stroke-width="2"/>
+                                <text x="538" y="146" text-anchor="end" fill="#fbbf24" font-size="10" font-family="JetBrains Mono">CAM 0</text>
+                                <text x="538" y="232" text-anchor="end" fill="#fbbf24" font-size="10" font-family="JetBrains Mono">CAM 1</text>
+                                <circle cx="568" cy="185" r="14" fill="none" stroke="#f59e0b" stroke-width="2" class="hotspot-pulse"/>
+                                <circle cx="568" cy="185" r="7" fill="#f59e0b"/>
+                            </g>
+
+                            <!-- 4. Power Jack DC 9V-19V (Kiri Atas) -->
+                            <g class="cursor-pointer" onclick="selectHardware('power')">
+                                <rect x="35" y="85" width="48" height="38" rx="5" fill="#090d16" stroke="#ef4444" stroke-width="2"/>
+                                <circle cx="48" cy="104" r="6" fill="#ef4444"/>
+                                <text x="90" y="108" fill="#fca5a5" font-size="10" font-family="JetBrains Mono">DC IN 9-19V</text>
+                                <circle cx="59" cy="104" r="13" fill="none" stroke="#ef4444" stroke-width="2" class="hotspot-pulse"/>
+                            </g>
+
+                            <!-- 5. DisplayPort & USB-C (Kiri Tengah) -->
+                            <g class="cursor-pointer" onclick="selectHardware('display')">
+                                <rect x="35" y="142" width="45" height="44" rx="4" fill="#1e293b" stroke="#a855f7" stroke-width="2"/>
+                                <rect x="35" y="196" width="38" height="24" rx="4" fill="#1e293b" stroke="#a855f7" stroke-width="2"/>
+                                <text x="88" y="168" fill="#d8b4fe" font-size="10" font-family="JetBrains Mono">DP + USB-C</text>
+                                <circle cx="57" cy="180" r="13" fill="none" stroke="#a855f7" stroke-width="2" class="hotspot-pulse"/>
+                                <circle cx="57" cy="180" r="6" fill="#a855f7"/>
+                            </g>
+
+                            <!-- 6. 4x USB 3.2 Type-A Ports (Kiri Bawah) -->
+                            <g class="cursor-pointer" onclick="selectHardware('usb')">
+                                <rect x="35" y="236" width="52" height="52" rx="4" fill="#0284c7" fill-opacity="0.25" stroke="#38bdf8" stroke-width="2"/>
+                                <rect x="35" y="298" width="52" height="52" rx="4" fill="#0284c7" fill-opacity="0.25" stroke="#38bdf8" stroke-width="2"/>
+                                <text x="95" y="296" fill="#7dd3fc" font-size="10" font-family="JetBrains Mono">4x USB 3.2</text>
+                                <circle cx="61" cy="292" r="14" fill="none" stroke="#38bdf8" stroke-width="2" class="hotspot-pulse"/>
+                                <circle cx="61" cy="292" r="6" fill="#38bdf8"/>
+                            </g>
+
+                            <!-- 7. Gigabit Ethernet RJ45 (Bawah Kiri) -->
+                            <g class="cursor-pointer" onclick="selectHardware('ethernet')">
+                                <rect x="135" y="345" width="68" height="58" rx="5" fill="#1e293b" stroke="#10b981" stroke-width="2"/>
+                                <text x="169" y="378" text-anchor="middle" fill="#6ee7b7" font-size="10" font-weight="bold" font-family="JetBrains Mono">GbE LAN</text>
+                                <circle cx="169" cy="350" r="13" fill="none" stroke="#10b981" stroke-width="2" class="hotspot-pulse"/>
+                                <circle cx="169" cy="350" r="6" fill="#10b981"/>
+                            </g>
+
+                            <!-- 8. Slot M.2 NVMe SSD & Wi-Fi (Bawah Kanan) -->
+                            <g class="cursor-pointer" onclick="selectHardware('storage')">
+                                <rect x="330" y="332" width="175" height="45" rx="6" fill="#0f172a" stroke="#ec4899" stroke-width="2"/>
+                                <text x="417" y="359" text-anchor="middle" fill="#f9a8d4" font-size="10" font-family="JetBrains Mono">M.2 NVMe SSD & Wi-Fi</text>
+                                <circle cx="417" cy="336" r="13" fill="none" stroke="#ec4899" stroke-width="2" class="hotspot-pulse"/>
+                                <circle cx="417" cy="336" r="6" fill="#ec4899"/>
+                            </g>
+                        </svg>
+                    </div>
+
+                    <!-- Tombol Cepat Pilih Komponen (Memudahkan di Layar HP) -->
+                    <div class="mt-4 flex flex-wrap gap-1.5">
+                        <button onclick="selectHardware('som')" class="hw-pill px-2.5 py-1 rounded-lg text-xs font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/30">Modul Orin SOM</button>
+                        <button onclick="selectHardware('gpio')" class="hw-pill px-2.5 py-1 rounded-lg text-xs font-mono bg-slate-800 text-slate-300 border border-slate-700 hover:border-nvidia">40-Pin GPIO</button>
+                        <button onclick="selectHardware('csi')" class="hw-pill px-2.5 py-1 rounded-lg text-xs font-mono bg-slate-800 text-slate-300 border border-slate-700 hover:border-amber-400">MIPI CSI Camera</button>
+                        <button onclick="selectHardware('power')" class="hw-pill px-2.5 py-1 rounded-lg text-xs font-mono bg-slate-800 text-slate-300 border border-slate-700 hover:border-red-400">DC Power</button>
+                        <button onclick="selectHardware('usb')" class="hw-pill px-2.5 py-1 rounded-lg text-xs font-mono bg-slate-800 text-slate-300 border border-slate-700 hover:border-sky-400">4x USB 3.2</button>
+                        <button onclick="selectHardware('ethernet')" class="hw-pill px-2.5 py-1 rounded-lg text-xs font-mono bg-slate-800 text-slate-300 border border-slate-700 hover:border-emerald-400">Gigabit LAN</button>
+                        <button onclick="selectHardware('storage')" class="hw-pill px-2.5 py-1 rounded-lg text-xs font-mono bg-slate-800 text-slate-300 border border-slate-700 hover:border-pink-400">M.2 NVMe</button>
+                        <button onclick="selectHardware('display')" class="hw-pill px-2.5 py-1 rounded-lg text-xs font-mono bg-slate-800 text-slate-300 border border-slate-700 hover:border-purple-400">DisplayPort/USB-C</button>
+                    </div>
+                </div>
+
+                <!-- Kolom Kanan: Kartu Detail Informasi Komponen -->
+                <div class="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl flex flex-col justify-between min-h-[420px]">
+                    <div id="hw-detail-content" class="space-y-4">
+                        <!-- Konten diisi dinamis oleh JavaScript -->
+                    </div>
+
+                    <div class="pt-5 mt-5 border-t border-slate-800 flex items-center justify-between gap-3">
+                        <span class="text-xs text-slate-400">Sudah paham perangkat kerasnya?</span>
+                        <button onclick="switchTab('memahami')" class="px-4 py-2 rounded-xl bg-nvidia hover:bg-nvidia-dark text-slate-950 font-bold text-xs sm:text-sm transition flex items-center gap-1.5 shadow-md shadow-nvidia/20">
+                            <span>Lanjut ke Tahap 2</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================================== -->
+        <!-- TAHAP 2: MEMAHAMI KONSEP (ARSITEKTUR EDGE AI & SISTEM KONTROL)        -->
+        <!-- ===================================================================== -->
+        <section id="section-memahami" class="tab-section hidden space-y-6">
+            <!-- Banner Tahap 2 -->
+            <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-cyan-950/40 border border-slate-800 rounded-2xl p-5 sm:p-6">
+                <span class="inline-flex items-center gap-1.5 text-xs font-mono font-semibold text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 px-2.5 py-1 rounded-full mb-2">
+                    TAHAP 2 • PEMAHAMAN ARSITEKTUR & LOGIKA KONTROL
+                </span>
+                <h2 class="text-xl sm:text-2xl font-bold text-white">Bagaimana Jetson Menggabungkan AI dan Elektronika Industri?</h2>
+                <p class="text-sm text-slate-300 mt-1 max-w-3xl">
+                    Di jurusan Teknik Elektronika Industri, kita terbiasa dengan PLC, Arduino, atau ESP32. Mari pahami mengapa <strong>Jetson Orin Nano</strong> dibutuhkan saat sistem harus "melihat" (Computer Vision) dan berpikir cerdas secara lokal (Edge AI).
+                </p>
+            </div>
+
+            <!-- Bagian A: Simulasi Pipeline Aliran Data Edge AI -> Aktuator -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+                    <div>
+                        <h3 class="text-lg font-bold text-white">1. Simulasi Aliran Sinyal: Dari Kamera ke Aktuator Robot</h3>
+                        <p class="text-xs text-slate-400">Klik tombol simulasi untuk melihat perjalanan data sensor hingga menjadi sinyal listrik 3.3V pada pin GPIO.</p>
+                    </div>
+                    <button onclick="runPipelineDemo()" class="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs sm:text-sm transition flex items-center gap-2 shadow-lg shadow-cyan-500/20">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>
+                        <span>Simulasikan Aliran Data</span>
+                    </button>
+                </div>
+
+                <!-- 4 Blok Diagram Aliran Data -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Step 1 -->
+                    <div id="pipe-step-1" class="pipe-card p-4 rounded-xl bg-slate-950 border border-slate-800 transition-all duration-300">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-mono font-bold text-amber-400">01. INPUT SENSOR</span>
+                            <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-900 text-slate-400">MIPI CSI-2</span>
+                        </div>
+                        <h4 class="font-bold text-white text-sm mb-1">Akuisisi Citra Kamera</h4>
+                        <p class="text-xs text-slate-400 leading-relaxed">Kamera industri menangkap citra objek di konveyor (resolusi 1080p @ 60fps) langsung ke memori GPU.</p>
+                        <div class="mt-3 pt-2 border-t border-slate-800/80 text-[11px] font-mono text-amber-300">Latensi: ~2.1 ms</div>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div id="pipe-step-2" class="pipe-card p-4 rounded-xl bg-slate-950 border border-slate-800 transition-all duration-300">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-mono font-bold text-nvidia">02. INFERENSI AI</span>
+                            <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-900 text-slate-400">CUDA + TensorRT</span>
+                        </div>
+                        <h4 class="font-bold text-white text-sm mb-1">Deteksi Objek Deep Learning</h4>
+                        <p class="text-xs text-slate-400 leading-relaxed">1024 Core GPU Ampere menjalankan model YOLO/CNN untuk mengklasifikasi produk baik vs cacat.</p>
+                        <div class="mt-3 pt-2 border-t border-slate-800/80 text-[11px] font-mono text-nvidia">Performa: 40 TOPS INT8</div>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div id="pipe-step-3" class="pipe-card p-4 rounded-xl bg-slate-950 border border-slate-800 transition-all duration-300">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-mono font-bold text-cyan-400">03. KONTROL LOGIKA</span>
+                            <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-900 text-slate-400">Python / ROS 2</span>
+                        </div>
+                        <h4 class="font-bold text-white text-sm mb-1">Pengambilan Keputusan</h4>
+                        <p class="text-xs text-slate-400 leading-relaxed">CPU Arm Cortex-A78AE mengevaluasi hasil deteksi (misal: <code class="text-cyan-300">if cacat &gt; 80%</code>) dan menghitung waktu tunda aktuasi.</p>
+                        <div class="mt-3 pt-2 border-t border-slate-800/80 text-[11px] font-mono text-cyan-300">OS: Ubuntu Linux (JetPack)</div>
+                    </div>
+
+                    <!-- Step 4 -->
+                    <div id="pipe-step-4" class="pipe-card p-4 rounded-xl bg-slate-950 border border-slate-800 transition-all duration-300">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-mono font-bold text-rose-400">04. OUTPUT AKTUATOR</span>
+                            <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-900 text-slate-400">GPIO 3.3V TTL</span>
+                        </div>
+                        <h4 class="font-bold text-white text-sm mb-1">Kendali Robot & Pneumatik</h4>
+                        <p class="text-xs text-slate-400 leading-relaxed">Pin GPIO mengeluarkan sinyal HIGH (3.3V) ke modul Optocoupler/Relay 24V untuk menggerakkan silinder sortir.</p>
+                        <div class="mt-3 pt-2 border-t border-slate-800/80 text-[11px] font-mono text-rose-300">Sinyal: HIGH (3.3V DC)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bagian B: Tabel Perbandingan & Peringatan Keselamatan Elektronika (3.3V vs 24V) -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Tabel Perbandingan -->
+                <div class="lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 sm:p-6">
+                    <h3 class="text-lg font-bold text-white mb-3">2. Perbandingan Mikrokontroler vs Jetson Orin Nano</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                            <thead>
+                                <tr class="border-b border-slate-800 text-slate-400 font-mono text-xs">
+                                    <th class="py-2.5 pr-3">Aspek Teknis</th>
+                                    <th class="py-2.5 px-3">Arduino / ESP32</th>
+                                    <th class="py-2.5 pl-3 text-nvidia">NVIDIA Jetson Orin Nano</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800/70 text-slate-300">
+                                <tr>
+                                    <td class="py-2.5 pr-3 font-semibold text-white">Arsitektur Prosesor</td>
+                                    <td class="py-2.5 px-3">Mikrokontroler (8/32-bit MCU)</td>
+                                    <td class="py-2.5 pl-3 text-nvidia font-semibold">6-Core Arm CPU + 1024-Core GPU</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2.5 pr-3 font-semibold text-white">Kemampuan AI</td>
+                                    <td class="py-2.5 px-3">Sangat terbatas (TinyML dasar)</td>
+                                    <td class="py-2.5 pl-3 text-cyan-300 font-semibold">40 TOPS (Deteksi Objek Real-time)</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2.5 pr-3 font-semibold text-white">Sistem Operasi</td>
+                                    <td class="py-2.5 px-3">Bare-metal / FreeRTOS</td>
+                                    <td class="py-2.5 pl-3">NVIDIA JetPack (Ubuntu Linux)</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2.5 pr-3 font-semibold text-white">Bahasa Pemrograman</td>
+                                    <td class="py-2.5 px-3">C / C++ (Arduino IDE)</td>
+                                    <td class="py-2.5 pl-3">Python, C++, CUDA, ROS 2</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2.5 pr-3 font-semibold text-white">Peran di Industri</td>
+                                    <td class="py-2.5 px-3">Baca sensor analog & kontrol motor lokal</td>
+                                    <td class="py-2.5 pl-3">Otak Robot Otonom, Quality Control Kamera</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Kotak Keselamatan Elektronika (K3 & Antarmuka Tegangan) -->
+                <div class="lg:col-span-5 bg-gradient-to-br from-amber-950/40 via-slate-900 to-slate-900 border border-amber-500/30 rounded-2xl p-5 sm:p-6 flex flex-col justify-between">
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-2 text-amber-400 font-bold text-base">
+                            <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                            <span>Catatan K3 Elektronika: Tegangan GPIO 3.3V!</span>
+                        </div>
+                        <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                            Pin GPIO pada Jetson Orin Nano bekerja pada level tegangan logika <strong>3.3V DC</strong> dengan arus maksimal sangat kecil (~2 mA).
+                        </p>
+                        <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-3.5 space-y-2 text-xs">
+                            <div class="flex items-start gap-2 text-rose-400">
+                                <span class="font-bold">✖ JANGAN:</span>
+                                <span>Menghubungkan pin GPIO langsung ke sensor 5V/24V PLC atau koil solenoid/motor DC!</span>
+                            </div>
+                            <div class="flex items-start gap-2 text-emerald-400">
+                                <span class="font-bold">✔ WAJIB:</span>
+                                <span>Gunakan <strong>Optocoupler</strong>, <strong>Logic Level Shifter (3.3V ↔ 5V)</strong>, atau <strong>Driver MOSFET/Relay</strong> untuk mengisolasi rangkaian daya industri 24V.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 mt-4 border-t border-slate-800 flex justify-end">
+                        <button onclick="switchTab('mengaplikasi')" class="px-4 py-2.5 rounded-xl bg-nvidia hover:bg-nvidia-dark text-slate-950 font-bold text-xs sm:text-sm transition flex items-center gap-2 shadow-lg shadow-nvidia/20">
+                            <span>Masuk ke Lab Praktik Coding</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================================== -->
+        <!-- TAHAP 3: MENGAPLIKASI (SIMULASI LAB PEMROGRAMAN & ROBOT SORTIR AI)    -->
+        <!-- ===================================================================== -->
+        <section id="section-mengaplikasi" class="tab-section hidden space-y-5">
+            <!-- Banner Lab Praktik -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-xs font-mono font-semibold text-nvidia bg-nvidia/10 border border-nvidia/30 px-2.5 py-0.5 rounded-full">TAHAP 3 • VIRTUAL LAB PRAKTIKUM</span>
+                        <span class="text-xs font-mono text-cyan-400">Studi Kasus: Smart Quality Control PCB & IC</span>
+                    </div>
+                    <h2 class="text-lg sm:text-xl font-bold text-white">Pemrograman Python: Deteksi AI & Kontrol Aktuator Robot</h2>
+                </div>
+
+                <!-- Checklist Misi Praktikum Siswa -->
+                <div class="flex flex-wrap items-center gap-2 text-xs">
+                    <div id="mission-1" class="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 flex items-center gap-1.5">
+                        <span class="mission-dot w-2 h-2 rounded-full bg-slate-600"></span>
+                        <span>Misi 1: Sortir 3 Komponen Cacat</span>
+                    </div>
+                    <div id="mission-2" class="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 flex items-center gap-1.5">
+                        <span class="mission-dot w-2 h-2 rounded-full bg-slate-600"></span>
+                        <span>Misi 2: Atur Threshold ≥ 0.80</span>
+                    </div>
+                    <div id="mission-3" class="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 flex items-center gap-1.5">
+                        <span class="mission-dot w-2 h-2 rounded-full bg-slate-600"></span>
+                        <span>Misi 3: Uji Pin GPIO 12</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Workspace Utama: Editor Kode Python (Kiri) + Simulasi Konveyor & Robot (Kanan) -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                <!-- Panel Kiri: Parameter Interaktif & Live Python Script -->
+                <div class="lg:col-span-5 bg-slate-900/95 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col justify-between space-y-4 shadow-xl">
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-rose-500"></span>
+                                <span class="w-3 h-3 rounded-full bg-amber-400"></span>
+                                <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                                <span class="ml-1 font-mono text-xs text-slate-300 font-semibold">jetson_ai_sorter.py</span>
+                            </div>
+                            <span class="text-[11px] font-mono text-nvidia">JetPack 6.0 • Python 3.10</span>
+                        </div>
+
+                        <!-- Kontrol Parameter Interaktif (Terhubung Langsung ke Kode) -->
+                        <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-3">
+                            <div class="text-xs font-bold text-cyan-400 uppercase tracking-wider">Panel Konfigurasi Parameter Program</div>
+                            
+                            <!-- Toggle AI Vision -->
+                            <div class="flex items-center justify-between">
+                                <label for="ctrl-ai-enabled" class="text-xs text-slate-300 font-medium">Aktifkan Model AI (TensorRT):</label>
+                                <input type="checkbox" id="ctrl-ai-enabled" checked onchange="syncCodeFromControls()" class="w-4 h-4 accent-nvidia rounded cursor-pointer">
+                            </div>
+
+                            <!-- Slider Confidence Threshold -->
+                            <div>
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="text-slate-300">Confidence Threshold AI:</span>
+                                    <span id="val-threshold" class="font-mono font-bold text-nvidia">0.75</span>
+                                </div>
+                                <input type="range" id="ctrl-threshold" min="0.50" max="0.95" step="0.05" value="0.75" oninput="syncCodeFromControls()" class="w-full accent-nvidia cursor-pointer">
+                            </div>
+
+                            <!-- Pilihan Pin GPIO Aktuator -->
+                            <div class="grid grid-cols-2 gap-2.5">
+                                <div>
+                                    <label for="ctrl-gpio-pin" class="block text-[11px] text-slate-400 mb-1">Pin Output GPIO (BOARD):</label>
+                                    <select id="ctrl-gpio-pin" onchange="syncCodeFromControls()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-amber-300 focus:outline-none focus:border-nvidia">
+                                        <option value="18">Pin 18 (GPIO_PWM0)</option>
+                                        <option value="12">Pin 12 (GPIO_PCM)</option>
+                                        <option value="13">Pin 13 (GPIO_SPI1)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="ctrl-speed" class="block text-[11px] text-slate-400 mb-1">Kecepatan Konveyor:</label>
+                                    <select id="ctrl-speed" onchange="syncCodeFromControls()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-cyan-300 focus:outline-none focus:border-nvidia">
+                                        <option value="1">1.0x (Normal)</option>
+                                        <option value="1.5">1.5x (Cepat)</option>
+                                        <option value="2.2">2.2x (Produksi Tinggi)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pratinjau Kode Python Real-time -->
+                        <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 font-mono text-[11px] sm:text-xs leading-relaxed overflow-x-auto text-slate-300">
+<pre id="python-code-preview"><span class="text-slate-500"># Program Kendali Sortir Cacat Elektronik - Jetson Orin Nano</span>
+<span class="text-purple-400">import</span> Jetson.GPIO <span class="text-purple-400">as</span> GPIO
+<span class="text-purple-400">import</span> jetson_inference, jetson_utils, time
+
+<span class="text-cyan-300">REJECT_PIN</span> = <span id="code-pin" class="text-amber-400 font-bold">18</span>          <span class="text-slate-500"># Sinyal 3.3V ke Relay Pneumatik</span>
+<span class="text-cyan-300">CONF_LIMIT</span> = <span id="code-thresh" class="text-nvidia font-bold">0.75</span>        <span class="text-slate-500"># Batas keyakinan deteksi AI</span>
+<span class="text-cyan-300">AI_ACTIVE</span>  = <span id="code-ai" class="text-emerald-400 font-bold">True</span>        <span class="text-slate-500"># Status akselerasi TensorRT</span>
+
+GPIO.setmode(GPIO.BOARD)
+GPIO.setup(REJECT_PIN, GPIO.OUT, initial=GPIO.LOW)
+net = jetson_inference.detectNet(<span class="text-amber-200">"pcb-qc-yolov8"</span>, threshold=CONF_LIMIT)
+
+<span class="text-purple-400">while</span> <span class="text-emerald-400">True</span>:
+    frame = camera.Capture()
+    detections = net.Detect(frame) <span class="text-purple-400">if</span> AI_ACTIVE <span class="text-purple-400">else</span> []
+    <span class="text-purple-400">for</span> obj <span class="text-purple-400">in</span> detections:
+        <span class="text-purple-400">if</span> obj.Class == <span class="text-amber-200">"CACAT"</span> <span class="text-purple-400">and</span> obj.Confidence &gt;= CONF_LIMIT:
+            GPIO.output(REJECT_PIN, GPIO.HIGH) <span class="text-slate-500"># Aktifkan Lengan Sortir!</span>
+            time.sleep(0.15)
+            GPIO.output(REJECT_PIN, GPIO.LOW)</pre>
+                        </div>
+                    </div>
+
+                    <!-- Tombol Eksekusi Simulasi -->
+                    <div class="flex flex-wrap items-center gap-2 pt-2">
+                        <button id="btn-sim-toggle" onclick="toggleSimulation()" class="flex-1 py-2.5 px-4 rounded-xl bg-nvidia hover:bg-nvidia-dark text-slate-950 font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-nvidia/20">
+                            <span id="sim-toggle-text">⏸ Jeda Simulasi</span>
+                        </button>
+                        <button onclick="spawnDefectivePart()" class="py-2.5 px-3.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 font-semibold text-xs transition">
+                            + Uji Komponen Cacat
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Panel Kanan: Visualisasi Pabrik & Monitor Telemetri Jetson -->
+                <div class="lg:col-span-7 bg-slate-900/95 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col justify-between space-y-4 shadow-xl">
+                    <!-- Header Telemetri Real-Time -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
+                            <div class="text-[10px] font-mono text-slate-400">TENSORRT FPS</div>
+                            <div id="tel-fps" class="text-base sm:text-lg font-extrabold font-mono text-nvidia">42.4 FPS</div>
+                        </div>
+                        <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
+                            <div class="text-[10px] font-mono text-slate-400">STATUS PIN GPIO <span id="tel-pin-num">18</span></div>
+                            <div id="tel-gpio-state" class="text-base sm:text-lg font-extrabold font-mono text-slate-400">LOW (0.0V)</div>
+                        </div>
+                        <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
+                            <div class="text-[10px] font-mono text-slate-400">PRODUK LOLOS QC</div>
+                            <div id="tel-good-count" class="text-base sm:text-lg font-extrabold font-mono text-emerald-400">0</div>
+                        </div>
+                        <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
+                            <div class="text-[10px] font-mono text-slate-400">CACAT TERSORTIR</div>
+                            <div id="tel-reject-count" class="text-base sm:text-lg font-extrabold font-mono text-amber-400">0</div>
+                        </div>
+                    </div>
+
+                    <!-- Canvas Simulasi Pabrik Konveyor + Kamera AI + Lengan Robot -->
+                    <div class="relative w-full h-[300px] sm:h-[340px] bg-slate-950 rounded-xl border border-slate-800 overflow-hidden">
+                        <canvas id="simCanvas"></canvas>
+                        <!-- Overlay Keterangan Zona -->
+                        <div class="absolute top-2.5 left-3 pointer-events-none flex items-center gap-2">
+                            <span class="px-2 py-0.5 rounded bg-slate-900/90 border border-slate-700 text-[10px] font-mono text-cyan-300">
+                                ● LIVE CSI CAMERA FEED
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Terminal Log Serial Jetson -->
+                    <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 font-mono text-[11px] text-slate-400 h-24 overflow-y-auto" id="jetson-console">
+                        <div class="text-nvidia">[SYSTEM] NVIDIA Jetson Orin Nano 8GB siap. Memuat engine TensorRT...</div>
+                        <div class="text-cyan-400">[GPIO] Pin 18 dikonfigurasi sebagai OUTPUT (3.3V Logic).</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================================== -->
+        <!-- TAHAP 4: MISI & EVALUASI (KUIS INTERAKTIF & SERTIFIKAT PRAKTIKUM)     -->
+        <!-- ===================================================================== -->
+        <section id="section-evaluasi" class="tab-section hidden space-y-6">
+            <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-purple-950/40 border border-slate-800 rounded-2xl p-5 sm:p-6">
+                <span class="inline-flex items-center gap-1.5 text-xs font-mono font-semibold text-purple-400 bg-purple-500/10 border border-purple-500/30 px-2.5 py-1 rounded-full mb-2">
+                    TAHAP 4 • EVALUASI KOMPETENSI SISWA SMK
+                </span>
+                <h2 class="text-xl sm:text-2xl font-bold text-white">Tantangan Insinyur Muda: Uji Pemahaman Jetson Orin Nano</h2>
+                <p class="text-sm text-slate-300 mt-1">
+                    Jawab 6 studi kasus rekayasa elektronika dan AI berikut untuk mengukur penguasaan materimu dan mencetak Kartu Pencapaian Praktikum!
+                </p>
+            </div>
+
+            <!-- Kontainer Kuis -->
+            <div id="quiz-container" class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 sm:p-7 shadow-xl max-w-4xl mx-auto">
+                <!-- Header Soal -->
+                <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-5">
+                    <span class="text-xs font-mono text-cyan-400 font-bold">PERTANYAAN <span id="q-number">1</span> DARI 6</span>
+                    <span class="text-xs font-mono text-amber-400">Skor Kuis: <span id="quiz-score">0</span> / 60</span>
+                </div>
+
+                <!-- Teks Pertanyaan -->
+                <h3 id="q-text" class="text-base sm:text-lg font-bold text-white leading-relaxed mb-5">
+                    Memuat pertanyaan...
+                </h3>
+
+                <!-- Pilihan Jawaban -->
+                <div id="q-options" class="space-y-3">
+                    <!-- Opsi diisi dinamis -->
+                </div>
+
+                <!-- Kotak Penjelasan Pedagogis -->
+                <div id="q-feedback" class="hidden mt-5 p-4 rounded-xl border text-xs sm:text-sm leading-relaxed">
+                    <!-- Penjelasan diisi dinamis -->
+                </div>
+
+                <!-- Tombol Navigasi Kuis -->
+                <div class="mt-6 flex justify-end">
+                    <button id="btn-next-question" onclick="nextQuestion()" class="hidden px-5 py-2.5 rounded-xl bg-nvidia hover:bg-nvidia-dark text-slate-950 font-bold text-sm transition">
+                        Pertanyaan Selanjutnya →
+                    </button>
+                </div>
+            </div>
+
+            <!-- Kartu Hasil & Sertifikat Praktikum (Tampil Setelah Selesai Kuis) -->
+            <div id="quiz-result-panel" class="hidden max-w-4xl mx-auto space-y-6">
+                <div id="certificate-card" class="bg-gradient-to-br from-slate-900 via-slate-950 to-emerald-950/60 border-2 border-nvidia/60 rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5 mb-5">
+                        <div>
+                            <div class="text-xs font-mono text-nvidia font-bold tracking-widest uppercase">Sertifikat Pencapaian Kompetensi</div>
+                            <h3 class="text-2xl font-extrabold text-white mt-1">SISTEM EMBEDDED & EDGE AI ROBOTIKA</h3>
+                            <p class="text-xs text-slate-400">Jurusan Teknik Elektronika Industri • Platform NVIDIA Jetson Orin Nano</p>
+                        </div>
+                        <div class="w-14 h-14 rounded-2xl bg-nvidia/20 border border-nvidia flex items-center justify-center shrink-0">
+                            <span class="font-mono font-extrabold text-nvidia text-lg">AI</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <label for="input-student-name" class="block text-xs text-slate-400 mb-1">Nama Lengkap Siswa:</label>
+                            <input type="text" id="input-student-name" placeholder="Ketik namamu di sini..." value="Siswa Teknik Elektronika" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3.5 py-2 text-sm font-bold text-white focus:outline-none focus:border-nvidia">
+                        </div>
+                        <div>
+                            <label for="input-student-class" class="block text-xs text-slate-400 mb-1">Kelas / Kompetensi Keahlian:</label>
+                            <input type="text" id="input-student-class" placeholder="Contoh: XII TEI 1" value="XII Teknik Elektronika Industri" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3.5 py-2 text-sm font-semibold text-cyan-300 focus:outline-none focus:border-nvidia">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3 bg-slate-900/80 border border-slate-800 rounded-xl p-4 text-center">
+                        <div>
+                            <div class="text-[11px] text-slate-400">Skor Evaluasi</div>
+                            <div id="final-quiz-score" class="text-xl sm:text-2xl font-extrabold font-mono text-nvidia">0 / 60</div>
+                        </div>
+                        <div>
+                            <div class="text-[11px] text-slate-400">Total XP Belajar</div>
+                            <div id="final-total-xp" class="text-xl sm:text-2xl font-extrabold font-mono text-amber-400">0 XP</div>
+                        </div>
+                        <div>
+                            <div class="text-[11px] text-slate-400">Predikat</div>
+                            <div id="final-predicate" class="text-sm sm:text-base font-extrabold text-cyan-400 mt-1">Kompeten</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-center gap-3">
+                    <button onclick="window.print()" class="px-5 py-2.5 rounded-xl bg-nvidia hover:bg-nvidia-dark text-slate-950 font-bold text-sm transition flex items-center gap-2">
+                        <span>🖨️ Cetak / Simpan PDF Hasil Belajar</span>
+                    </button>
+                    <button onclick="resetQuiz()" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm transition">
+                        Ulangi Kuis
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800/80 bg-slate-950/80 py-4 px-4 sm:px-6 text-center text-xs text-slate-500">
+        Media Pembelajaran Interaktif SMK — Jurusan Teknik Elektronika Industri • Sistem Embedded, Edge AI & Robotika (NVIDIA Jetson Orin Nano)
+    </footer>
+
+    <!-- ===================================================================== -->
+    <!-- SCRIPT LOGIKA APLIKASI, AUDIO SYNTH, SIMULASI CANVAS & KUIS           -->
+    <!-- ===================================================================== -->
+    <script>
+        // ---------------------------------------------------------------------
+        // 1. STATE GLOBAL & SISTEM GAMIFIKASI (XP & EFEK SUARA)
+        // ---------------------------------------------------------------------
+        const appState = {
+            xp: 15,
+            soundEnabled: true,
+            exploredHardware: new Set(['som']),
+            completedMissions: new Set(),
+            currentTab: 'mengenal'
+        };
+
+        // Fungsi Synthesize Suara Ringan Menggunakan Tone.js (Tanpa File Eksternal)
+        function playTone(type) {
+            if (!appState.soundEnabled || typeof Tone === 'undefined') return;
+            try {
+                if (Tone.context.state !== 'running') {
+                    Tone.start();
+                }
+                const synth = new Tone.Synth({
+                    oscillator: { type: 'triangle' },
+                    envelope: { attack: 0.01, decay: 0.12, sustain: 0.02, release: 0.15 }
+                }).toDestination();
+                synth.volume.value = -12;
+
+                if (type === 'click') synth.triggerAttackRelease('C5', '16n');
+                if (type === 'xp') synth.triggerAttackRelease('E5', '16n');
+                if (type === 'reject') synth.triggerAttackRelease('A4', '32n');
+                if (type === 'success') {
+                    synth.triggerAttackRelease('G5', '16n');
+                    setTimeout(() => synth.triggerAttackRelease('C6', '8n'), 100);
+                }
+                if (type === 'error') synth.triggerAttackRelease('F3', '8n');
+            } catch (e) {
+                // Abaikan jika browser membatasi audio sebelum interaksi user
+            }
+        }
+
+        function toggleSound() {
+            appState.soundEnabled = !appState.soundEnabled;
+            document.getElementById('icon-sound-on').classList.toggle('hidden', !appState.soundEnabled);
+            document.getElementById('icon-sound-off').classList.toggle('hidden', appState.soundEnabled);
+            showToast(appState.soundEnabled ? 'Efek suara diaktifkan' : 'Efek suara dimatikan', 'info');
+        }
+
+        function addXP(amount, reason) {
+            appState.xp += amount;
+            document.getElementById('xp-display').textContent = appState.xp;
+            
+            // Update Progress Bar & Rank Siswa
+            const percentage = Math.min(100, Math.round((appState.xp / 300) * 100));
+            document.getElementById('xp-bar').style.width = `${percentage}%`;
+
+            const rankEl = document.getElementById('student-rank');
+            if (appState.xp >= 220) {
+                rankEl.textContent = 'Level 4: Master Edge AI & Robotika';
+            } else if (appState.xp >= 140) {
+                rankEl.textContent = 'Level 3: Teknisi Otomasi AI';
+            } else if (appState.xp >= 70) {
+                rankEl.textContent = 'Level 2: Operator Sistem Embedded';
+            }
+
+            if (reason) {
+                playTone('xp');
+                showToast(`+${amount} XP: ${reason}`, 'success');
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const colors = {
+                success: 'bg-slate-900 border-nvidia text-white',
+                info: 'bg-slate-900 border-cyan-500 text-slate-100',
+                warning: 'bg-slate-900 border-amber-500 text-amber-200'
+            };
+            toast.className = `pointer-events-auto px-4 py-3 rounded-xl border shadow-xl text-xs sm:text-sm font-medium flex items-center gap-2.5 transition-all duration-300 ${colors[type] || colors.info}`;
+            toast.innerHTML = `<span class="w-2 h-2 rounded-full bg-nvidia shrink-0"></span><span>${message}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(8px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // ---------------------------------------------------------------------
+        // 2. NAVIGASI TAB PEMBELAJARAN
+        // ---------------------------------------------------------------------
+        function switchTab(tabId) {
+            playTone('click');
+            appState.currentTab = tabId;
+
+            document.querySelectorAll('.tab-section').forEach(sec => sec.classList.add('hidden'));
+            document.getElementById(`section-${tabId}`).classList.remove('hidden');
+
+            document.querySelectorAll('.nav-tab').forEach(btn => {
+                btn.className = 'nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800';
+            });
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            activeBtn.className = 'nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition bg-nvidia text-slate-950 shadow-md shadow-nvidia/20';
+
+            if (tabId === 'mengaplikasi') {
+                setTimeout(resizeSimCanvas, 50);
+            }
+        }
+
+        // ---------------------------------------------------------------------
+        // 3. DATA & INTERAKSI TAHAP 1 (MENGENAL KOMPONEN JETSON ORIN NANO)
+        // ---------------------------------------------------------------------
+        const hardwareData = {
+            som: {
+                badge: 'INTI KOMPUTASI AI (SYSTEM-ON-MODULE)',
+                badgeColor: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30',
+                title: 'Modul Jetson Orin Nano (GPU Ampere + CPU Arm)',
+                specs: [
+                    'GPU: 1024-core NVIDIA Ampere architecture dengan 32 Tensor Cores',
+                    'CPU: 6-core Arm® Cortex®-A78AE v8.2 64-bit',
+                    'Memori: 8GB 128-bit LPDDR5 (68 GB/s)',
+                    'Performa AI: Hingga 40 TOPS (Trillion Operations Per Second)'
+                ],
+                functionDesc: 'Merupakan "otak" utama yang memproses algoritma kecerdasan buatan (Deep Learning) secara paralel menggunakan ribuan inti GPU, sekaligus menjalankan sistem operasi Linux Ubuntu.',
+                industrialApp: 'Mendeteksi cacat produk PCB secara real-time di konveyor berkecepatan tinggi, pemetaan ruangan (SLAM) pada robot AGV gudang, dan pengenalan gestur operator mesin.'
+            },
+            gpio: {
+                badge: 'ANTARMUKA ELEKTRONIKA & AKTUATOR',
+                badgeColor: 'text-nvidia bg-nvidia/10 border-nvidia/30',
+                title: '40-Pin Expansion Header (GPIO, PWM, I2C, SPI, UART)',
+                specs: [
+                    'Level Tegangan Logika: 3.3V TTL (Maksimum arus ~2mA per pin)',
+                    'Protokol Komunikasi: I2C, SPI, UART Serial, I2S',
+                    'Sinyal Kontrol: Digital I/O & Hardware PWM (Pulse Width Modulation)',
+                    'Kompatibilitas Pinout: Serupa dengan standar Raspberry Pi 40-pin'
+                ],
+                functionDesc: 'Jembatan penghubung antara dunia komputasi AI dengan komponen elektronika fisik seperti sensor industri, driver motor, servo, dan modul relay.',
+                industrialApp: 'Mengirim sinyal PWM untuk mengatur sudut lengan robotik penyortir, berkomunikasi dengan sensor suhu/jarak I2C, dan memicu Optocoupler Relay 24V pneumatik.'
+            },
+            csi: {
+                badge: 'ANTARMUKA SENSOR PENGLIHATAN (VISION)',
+                badgeColor: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
+                title: '2x Konektor Kamera MIPI CSI-2 (22-Pin)',
+                specs: [
+                    'Jalur Data: Mendukung kamera 2-lane dan 4-lane MIPI CSI-2',
+                    'Latensi: Sangat rendah (akses langsung ke ISP & memori GPU)',
+                    'Sensor Populer: Sony IMX219, IMX477 HQ Camera'
+                ],
+                functionDesc: 'Menghubungkan sensor kamera berkecepatan tinggi langsung ke Image Signal Processor (ISP) pada chip Orin tanpa membebani jalur USB.',
+                industrialApp: 'Sistem Stereo Vision (2 kamera sekaligus) untuk mengukur kedalaman jarak objek pada robot pemetik buah atau lengan robot perakitan komponen.'
+            },
+            power: {
+                badge: 'CATU DAYA SISTEM EMBEDDED',
+                badgeColor: 'text-rose-400 bg-rose-500/10 border-rose-500/30',
+                title: 'DC Barrel Jack Power Input (9V – 19V DC)',
+                specs: [
+                    'Tegangan Input: 9V hingga 19V DC (Adaptor bawaan 19V / 2.37A)',
+                    'Mode Daya Configurable: 7W (hemat daya baterai) hingga 15W (performa penuh)',
+                    'Regulasi: Step-down Buck Converter terintegrasi di Carrier Board'
+                ],
+                functionDesc: 'Menyuplai energi listrik yang stabil untuk modul komputasi GPU/CPU serta perangkat periferal yang terhubung ke port USB.',
+                industrialApp: 'Pada robot bergerak (Mobile Robot / AGV), port ini dihubungkan ke baterai LiPo 3S/4S (11.1V–14.8V) melalui modul proteksi arus.'
+            },
+            usb: {
+                badge: 'KONEKTIVITAS PERIFERAL KECEPATAN TINGGI',
+                badgeColor: 'text-sky-400 bg-sky-500/10 border-sky-500/30',
+                title: '4x Port USB 3.2 Gen 2 Type-A (10 Gbps)',
+                specs: [
+                    'Bandwidth: Hingga 10 Gbps per port',
+                    'Dukungan Perangkat: Kamera Kedalaman (Intel RealSense), LiDAR, Mikrokontroler'
+                ],
+                functionDesc: 'Menghubungkan sensor eksternal ber-bandwidth besar maupun mikrokontroler pendamping (seperti Arduino/STM32) melalui komunikasi serial USB.',
+                industrialApp: 'Menghubungkan sensor 3D LiDAR dan kamera depth Intel RealSense pada robot navigasi otonom (AMR) di lantai pabrik.'
+            },
+            ethernet: {
+                badge: 'JARINGAN INDUSTRI & IIoT',
+                badgeColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+                title: 'Port Gigabit Ethernet (RJ45 10/100/1000 Mbps)',
+                specs: [
+                    'Kecepatan: 1000BASE-T Gigabit Ethernet',
+                    'Protokol Industri: Modbus TCP/IP, OPC-UA, ROS 2 DDS, MQTT'
+                ],
+                functionDesc: 'Menyediakan koneksi jaringan kabel yang stabil, tahan interferensi elektromagnetik pabrik, dan berlatensi rendah.',
+                industrialApp: 'Mengintegrasikan Jetson Orin Nano dengan PLC Siemens/Omron di lini produksi serta mengirim data telemetri kualitas produksi ke server SCADA.'
+            },
+            storage: {
+                badge: 'PENYIMPANAN & KONEKTIVITAS NIRKABEL',
+                badgeColor: 'text-pink-400 bg-pink-500/10 border-pink-500/30',
+                title: 'Slot M.2 Key M (NVMe SSD) & M.2 Key E (Wi-Fi/BT)',
+                specs: [
+                    '2x Slot M.2 Key M: Mendukung SSD NVMe PCIe berkecepatan tinggi',
+                    '1x Slot M.2 Key E: Modul Wi-Fi & Bluetooth terpasang di bawah modul'
+                ],
+                functionDesc: 'Menyimpan sistem operasi Ubuntu, library CUDA/TensorRT, dataset pelatihan AI, dan model neural network berukuran besar dengan kecepatan baca/tulis tinggi.',
+                industrialApp: 'Menyimpan rekaman video inspeksi cacat produk (black-box data logger) serta memungkinkan monitoring robot jarak jauh via Wi-Fi.'
+            },
+            display: {
+                badge: 'ANTARMUKA VISUAL & DEBUGGING',
+                badgeColor: 'text-purple-400 bg-purple-500/10 border-purple-500/30',
+                title: 'DisplayPort 1.2 & USB Type-C (Data/Device Mode)',
+                specs: [
+                    'DisplayPort: Mendukung resolusi hingga 4K @ 60Hz',
+                    'USB-C: Berfungsi untuk flashing OS (SDK Manager) dan koneksi jaringan virtual'
+                ],
+                functionDesc: 'Menampilkan antarmuka grafis (GUI) hasil deteksi kamera AI pada layar monitor HMI (Human Machine Interface) operator.',
+                industrialApp: 'Menampilkan dashboard visual kualitas penyortiran produk secara langsung pada layar monitor stasiun operator Quality Control.'
+            }
+        };
+
+        function selectHardware(key) {
+            playTone('click');
+            const item = hardwareData[key];
+            if (!item) return;
+
+            if (!appState.exploredHardware.has(key)) {
+                appState.exploredHardware.add(key);
+                document.getElementById('explored-count').textContent = appState.exploredHardware.size;
+                addXP(15, `Mengenal komponen: ${item.title.split('(')[0].trim()}`);
+            }
+
+            const container = document.getElementById('hw-detail-content');
+            container.innerHTML = `
+                <div>
+                    <span class="inline-block text-[11px] font-mono font-bold px-2.5 py-1 rounded-full border ${item.badgeColor} mb-2">
+                        ${item.badge}
+                    </span>
+                    <h3 class="text-lg sm:text-xl font-extrabold text-white leading-snug">${item.title}</h3>
+                </div>
+
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5">
+                    <div class="text-xs font-mono text-slate-400 mb-2">SPESIFIKASI TEKNIS UTAMA:</div>
+                    <ul class="space-y-1.5 text-xs text-slate-200">
+                        ${item.specs.map(s => `<li class="flex items-start gap-2"><span class="text-nvidia font-bold">▸</span><span>${s}</span></li>`).join('')}
+                    </ul>
+                </div>
+
+                <div class="space-y-2">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-cyan-400">Fungsi dalam Sistem Embedded</h4>
+                    <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">${item.functionDesc}</p>
+                </div>
+
+                <div class="bg-emerald-950/30 border border-nvidia/30 rounded-xl p-3.5 space-y-1">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-nvidia">Aplikasi Industri & Robotika</h4>
+                    <p class="text-xs text-slate-200 leading-relaxed">${item.industrialApp}</p>
+                </div>
+            `;
+        }
+
+        // Inisialisasi tampilan awal komponen pertama
+        selectHardware('som');
+
+        // ---------------------------------------------------------------------
+        // 4. INTERAKSI TAHAP 2 (SIMULASI PIPELINE ALIRAN DATA)
+        // ---------------------------------------------------------------------
+        let pipelineRunning = false;
+        function runPipelineDemo() {
+            if (pipelineRunning) return;
+            pipelineRunning = true;
+            playTone('click');
+
+            const steps = [1, 2, 3, 4];
+            steps.forEach((step, idx) => {
+                setTimeout(() => {
+                    document.querySelectorAll('.pipe-card').forEach(c => {
+                        c.classList.remove('border-nvidia', 'ring-2', 'ring-nvidia/40', 'bg-slate-900');
+                        c.classList.add('border-slate-800', 'bg-slate-950');
+                    });
+                    const currentCard = document.getElementById(`pipe-step-${step}`);
+                    currentCard.classList.remove('border-slate-800', 'bg-slate-950');
+                    currentCard.classList.add('border-nvidia', 'ring-2', 'ring-nvidia/40', 'bg-slate-900');
+                    playTone('xp');
+
+                    if (step === 4) {
+                        addXP(20, 'Memahami siklus aliran data Edge AI ke GPIO!');
+                        setTimeout(() => {
+                            pipelineRunning = false;
+                        }, 800);
+                    }
+                }, idx * 650);
+            });
+        }
+
+        // ---------------------------------------------------------------------
+        // 5. SIMULASI VIRTUAL LAB TAHAP 3 (CANVAS KONVEYOR & LENGAN ROBOT AI)
+        // ---------------------------------------------------------------------
+        const simState = {
+            running: true,
+            aiEnabled: true,
+            threshold: 0.75,
+            gpioPin: 18,
+            speed: 1.0,
+            beltOffset: 0,
+            items: [],
+            spawnTimer: 0,
+            goodCount: 0,
+            rejectCount: 0,
+            gpioActiveTimer: 0,
+            armExtension: 0 // 0 = standby, 1 = mendorong objek cacat
+        };
+
+        function syncCodeFromControls() {
+            simState.aiEnabled = document.getElementById('ctrl-ai-enabled').checked;
+            simState.threshold = parseFloat(document.getElementById('ctrl-threshold').value);
+            simState.gpioPin = parseInt(document.getElementById('ctrl-gpio-pin').value, 10);
+            simState.speed = parseFloat(document.getElementById('ctrl-speed').value);
+
+            document.getElementById('val-threshold').textContent = simState.threshold.toFixed(2);
+            document.getElementById('code-pin').textContent = simState.gpioPin;
+            document.getElementById('code-thresh').textContent = simState.threshold.toFixed(2);
+            document.getElementById('code-ai').textContent = simState.aiEnabled ? 'True' : 'False';
+            document.getElementById('tel-pin-num').textContent = simState.gpioPin;
+
+            // Cek pencapaian Misi 2 & Misi 3
+            if (simState.threshold >= 0.80 && !appState.completedMissions.has('m2')) {
+                completeMission('m2', 'mission-2', 'Misi 2 Selesai: Confidence Threshold ≥ 0.80!');
+            }
+            if (simState.gpioPin === 12 && !appState.completedMissions.has('m3')) {
+                completeMission('m3', 'mission-3', 'Misi 3 Selesai: Konfigurasi Pin GPIO 12!');
+            }
+
+            appendConsole(`[CONFIG] Update: AI=${simState.aiEnabled}, Threshold=${simState.threshold.toFixed(2)}, Pin=${simState.gpioPin}`);
+        }
+
+        function completeMission(id, elementId, message) {
+            appState.completedMissions.add(id);
+            const el = document.getElementById(elementId);
+            el.className = 'px-3 py-1.5 rounded-xl bg-nvidia/20 border border-nvidia text-nvidia font-semibold flex items-center gap-1.5';
+            el.querySelector('.mission-dot').className = 'mission-dot w-2 h-2 rounded-full bg-nvidia';
+            addXP(30, message);
+        }
+
+        function appendConsole(text, colorClass = 'text-slate-300') {
+            const consoleEl = document.getElementById('jetson-console');
+            if (!consoleEl) return;
+            const line = document.createElement('div');
+            line.className = colorClass;
+            line.textContent = text;
+            consoleEl.appendChild(line);
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+            while (consoleEl.children.length > 25) {
+                consoleEl.removeChild(consoleEl.firstChild);
+            }
+        }
+
+        function toggleSimulation() {
+            simState.running = !simState.running;
+            playTone('click');
+            document.getElementById('sim-toggle-text').textContent = simState.running ? '⏸ Jeda Simulasi' : '▶ Lanjutkan Simulasi';
+        }
+
+        function spawnItem(forceDefective = false) {
+            const isDefective = forceDefective || Math.random() < 0.42;
+            const confidence = isDefective 
+                ? (0.76 + Math.random() * 0.22) // 0.76 - 0.98
+                : (0.85 + Math.random() * 0.14);
+
+            const typesGood = ['IC_ATMEGA_OK', 'KAPASITOR_OK'];
+            const typesBad = ['PCB_RETAK', 'PIN_IC_BENGKOK'];
+
+            simState.items.push({
+                x: -40,
+                yOffset: 0,
+                isDefective,
+                label: isDefective 
+                    ? typesBad[Math.floor(Math.random() * typesBad.length)] 
+                    : typesGood[Math.floor(Math.random() * typesGood.length)],
+                confidence: parseFloat(confidence.toFixed(2)),
+                sorted: false,
+                counted: false
+            });
+        }
+
+        function spawnDefectivePart() {
+            playTone('click');
+            spawnItem(true);
+            appendConsole('[INJECT] Komponen cacat ditambahkan ke konveyor uji...', 'text-amber-300');
+        }
+
+        // Pengaturan Canvas Simulasi
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeSimCanvas() {
+            if (!canvas || !canvas.parentElement) return;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        window.addEventListener('resize', resizeSimCanvas);
+
+        function updateAndDrawSimulation() {
+            const width = canvas.clientWidth || 600;
+            const height = canvas.clientHeight || 320;
+
+            if (simState.running) {
+                const vx = 2.1 * simState.speed;
+                simState.beltOffset = (simState.beltOffset + vx) % 32;
+                simState.spawnTimer += simState.speed;
+
+                if (simState.spawnTimer > 115) {
+                    simState.spawnTimer = 0;
+                    spawnItem(false);
+                }
+
+                // Zona Kamera AI (32% lebar) & Zona Aktuator Lengan Sortir (65% lebar)
+                const actuatorX = width * 0.65;
+
+                simState.items.forEach(item => {
+                    if (!item.sorted) {
+                        item.x += vx;
+                    } else {
+                        // Terdorong ke bawah menuju Bin Reject
+                        item.yOffset += 4.5 * simState.speed;
+                        item.x += vx * 0.35;
+                    }
+
+                    // Cek pemicu sortir saat melewati zona aktuator
+                    if (!item.sorted && Math.abs(item.x - actuatorX) < 14) {
+                        if (simState.aiEnabled && item.isDefective && item.confidence >= simState.threshold) {
+                            item.sorted = true;
+                            simState.gpioActiveTimer = 18;
+                            simState.armExtension = 1;
+                            simState.rejectCount++;
+                            document.getElementById('tel-reject-count').textContent = simState.rejectCount;
+                            playTone('reject');
+                            appendConsole(`[DETECT] ${item.label} (${(item.confidence*100).toFixed(0)}%) -> GPIO ${simState.gpioPin} HIGH!`, 'text-rose-400');
+
+                            if (simState.rejectCount >= 3 && !appState.completedMissions.has('m1')) {
+                                completeMission('m1', 'mission-1', 'Misi 1 Selesai: Berhasil menyortir 3 komponen cacat!');
+                            }
+                        }
+                    }
+
+                    // Hitung produk yang lolos ke ujung kanan konveyor
+                    if (!item.counted && !item.sorted && item.x > width - 45) {
+                        item.counted = true;
+                        if (!item.isDefective) {
+                            simState.goodCount++;
+                            document.getElementById('tel-good-count').textContent = simState.goodCount;
+                        } else {
+                            appendConsole(`[WARNING] Komponen cacat (${item.label}) lolos tanpa tersortir! Cek Threshold/AI.`, 'text-amber-400');
+                        }
+                    }
+                });
+
+                // Hapus item yang sudah keluar layar
+                simState.items = simState.items.filter(i => i.x < width + 60 && i.yOffset < height);
+
+                // Update animasi GPIO & Lengan Robot
+                if (simState.gpioActiveTimer > 0) {
+                    simState.gpioActiveTimer--;
+                    document.getElementById('tel-gpio-state').textContent = 'HIGH (3.3V)';
+                    document.getElementById('tel-gpio-state').className = 'text-base sm:text-lg font-extrabold font-mono text-rose-400';
+                } else {
+                    simState.armExtension = Math.max(0, simState.armExtension - 0.12);
+                    document.getElementById('tel-gpio-state').textContent = 'LOW (0.0V)';
+                    document.getElementById('tel-gpio-state').className = 'text-base sm:text-lg font-extrabold font-mono text-slate-400';
+                }
+
+                // Simulasi fluktuasi FPS TensorRT
+                const fps = simState.aiEnabled ? (41 + Math.sin(Date.now() / 300) * 2.4).toFixed(1) : '0.0 (OFF)';
+                document.getElementById('tel-fps').textContent = simState.aiEnabled ? `${fps} FPS` : fps;
+            }
+
+            // ------------------ RENDER GAMBAR CANVAS ------------------
+            ctx.clearRect(0, 0, width, height);
+
+            const beltY = height * 0.34;
+            const beltH = 74;
+
+            // 1. Gambar Sabuk Konveyor Industri
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(0, beltY, width, beltH);
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(0, beltY, width, beltH);
+
+            // Garis Bergerak Konveyor
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 2;
+            for (let gx = -32 + simState.beltOffset; gx < width; gx += 32) {
+                ctx.beginPath();
+                ctx.moveTo(gx, beltY + 4);
+                ctx.lineTo(gx, beltY + beltH - 4);
+                ctx.stroke();
+            }
+
+            // 2. Zona Inspeksi Kamera CSI Jetson (32% lebar)
+            const camX = width * 0.32;
+            ctx.fillStyle = simState.aiEnabled ? 'rgba(6, 182, 212, 0.12)' : 'rgba(100, 116, 139, 0.08)';
+            ctx.fillRect(camX - 55, beltY - 12, 110, beltH + 24);
+            ctx.strokeStyle = simState.aiEnabled ? '#06b6d4' : '#475569';
+            ctx.setLineDash([5, 4]);
+            ctx.strokeRect(camX - 55, beltY - 12, 110, beltH + 24);
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = simState.aiEnabled ? '#22d3ee' : '#64748b';
+            ctx.font = 'bold 10px "JetBrains Mono", monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('ZONA KAMERA AI', camX, beltY - 18);
+
+            // 3. Aktuator Pneumatik / Lengan Robot Sortir (65% lebar)
+            const actX = width * 0.65;
+            // Silinder Aktuator di atas konveyor
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(actX - 18, beltY - 46, 36, 36);
+            ctx.strokeStyle = '#76B900';
+            ctx.strokeRect(actX - 18, beltY - 46, 36, 36);
+            ctx.fillStyle = '#e2e8f0';
+            ctx.font = 'bold 9px "JetBrains Mono", monospace';
+            ctx.fillText(`GPIO ${simState.gpioPin}`, actX, beltY - 52);
+
+            // Batang Pendorong (Piston)
+            const pistonPush = simState.armExtension * 48;
+            ctx.fillStyle = simState.armExtension > 0.1 ? '#f43f5e' : '#94a3b8';
+            ctx.fillRect(actX - 5, beltY - 10, 10, 14 + pistonPush);
+            ctx.fillRect(actX - 16, beltY + 2 + pistonPush, 32, 7);
+
+            // 4. Bin Reject (Bawah) & Bin Lolos QC (Kanan)
+            const binRejectY = beltY + beltH + 26;
+            ctx.fillStyle = 'rgba(244, 63, 94, 0.14)';
+            ctx.strokeStyle = '#f43f5e';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(actX - 48, binRejectY, 96, 46);
+            ctx.fillRect(actX - 48, binRejectY, 96, 46);
+            ctx.fillStyle = '#fda4af';
+            ctx.font = 'bold 10px "JetBrains Mono", monospace';
+            ctx.fillText('BIN REJECT (CACAT)', actX, binRejectY + 27);
+
+            // Bin Lolos QC di ujung kanan
+            ctx.fillStyle = 'rgba(16, 185, 129, 0.14)';
+            ctx.strokeStyle = '#10b981';
+            ctx.strokeRect(width - 78, beltY + 8, 70, beltH - 16);
+            ctx.fillRect(width - 78, beltY + 8, 70, beltH - 16);
+            ctx.fillStyle = '#6ee7b7';
+            ctx.fillText('LOLOS QC', width - 43, beltY + beltH / 2 + 4);
+
+            // 5. Gambar Komponen Elektronik di Atas Konveyor + AI Bounding Box
+            simState.items.forEach(item => {
+                const ix = item.x;
+                const iy = beltY + beltH / 2 + item.yOffset;
+
+                // Badan Komponen (IC / PCB)
+                ctx.fillStyle = item.isDefective ? '#451a1a' : '#0f291e';
+                ctx.strokeStyle = item.isDefective ? '#ef4444' : '#76B900';
+                ctx.lineWidth = 2;
+                ctx.fillRect(ix - 18, iy - 14, 36, 28);
+                ctx.strokeRect(ix - 18, iy - 14, 36, 28);
+
+                // Pin Kaki IC
+                ctx.fillStyle = '#cbd5e1';
+                for (let p = -12; p <= 12; p += 8) {
+                    ctx.fillRect(ix + p - 1.5, iy - 18, 3, 4);
+                    ctx.fillRect(ix + p - 1.5, iy + 14, 3, 4);
+                }
+
+                // Tanda Retak pada Komponen Cacat
+                if (item.isDefective) {
+                    ctx.strokeStyle = '#fca5a5';
+                    ctx.beginPath();
+                    ctx.moveTo(ix - 10, iy - 8);
+                    ctx.lineTo(ix + 2, iy + 1);
+                    ctx.lineTo(ix + 11, iy - 5);
+                    ctx.stroke();
+                }
+
+                // AI Bounding Box saat melewati / sesudah kamera (jika AI aktif)
+                if (simState.aiEnabled && ix > camX - 55 && !item.sorted) {
+                    const meetsThreshold = item.confidence >= simState.threshold;
+                    const boxColor = item.isDefective 
+                        ? (meetsThreshold ? '#f43f5e' : '#f59e0b') 
+                        : '#76B900';
+
+                    ctx.strokeStyle = boxColor;
+                    ctx.lineWidth = 1.8;
+                    ctx.strokeRect(ix - 24, iy - 22, 48, 44);
+
+                    // Label Kelas & Akurasi
+                    ctx.fillStyle = boxColor;
+                    ctx.fillRect(ix - 34, iy - 36, 68, 13);
+                    ctx.fillStyle = '#090d16';
+                    ctx.font = 'bold 8px "JetBrains Mono", monospace';
+                    ctx.fillText(`${item.isDefective ? 'CACAT' : 'BAIK'} ${(item.confidence * 100).toFixed(0)}%`, ix, iy - 27);
+                }
+            });
+
+            requestAnimationFrame(updateAndDrawSimulation);
+        }
+
+        // Mulai simulasi awal
+        spawnItem(false);
+        setTimeout(() => {
+            resizeSimCanvas();
+            requestAnimationFrame(updateAndDrawSimulation);
+        }, 100);
+
+        // ---------------------------------------------------------------------
+        // 6. KUIS INTERAKTIF & EVALUASI TAHAP 4
+        // ---------------------------------------------------------------------
+        const quizQuestions = [
+            {
+                q: '1. Mengapa NVIDIA Jetson Orin Nano jauh lebih unggul dibandingkan mikrokontroler standar (seperti Arduino Uno) untuk aplikasi penyortiran produk berbasis kamera di industri?',
+                options: [
+                    'Karena Jetson memiliki tegangan kerja GPIO 24V DC yang langsung terhubung ke PLC',
+                    'Karena Jetson memiliki 1024-core GPU Ampere dan Tensor Cores yang mampu melakukan pemrosesan paralel AI (Computer Vision) secara real-time',
+                    'Karena Jetson tidak membutuhkan sistem operasi sama sekali untuk menjalankan program',
+                    'Karena Arduino tidak dapat membaca sinyal digital HIGH dan LOW'
+                ],
+                correct: 1,
+                explanation: 'Tepat sekali! Pemrosesan gambar kamera dengan Deep Learning (seperti YOLO) membutuhkan ribuan operasi matriks paralel yang dikerjakan sangat cepat oleh GPU Ampere dan Tensor Cores pada Jetson Orin Nano.'
+            },
+            {
+                q: '2. Seorang siswa SMK Teknik Elektronika Industri ingin menghubungkan pin output GPIO Jetson Orin Nano ke katup solenoid pneumatik 24V DC. Komponen antarmuka apa yang wajib digunakan agar papan Jetson tidak rusak?',
+                options: [
+                    'Menghubungkan langsung pin GPIO ke koil solenoid 24V agar arusnya kuat',
+                    'Menggunakan potensiometer 10k Ohm secara seri',
+                    'Menggunakan modul Optocoupler / Driver Relay untuk mengisolasi sinyal logika 3.3V dari tegangan daya 24V',
+                    'Mengubah mode pin menjadi input analog'
+                ],
+                correct: 2,
+                explanation: 'Benar! Pin GPIO Jetson bekerja pada level logika 3.3V dengan arus sangat kecil (~2mA). Optocoupler dan driver relay melindungi chip Orin dari lonjakan tegangan balik (back-EMF) dan tegangan industri 24V.'
+            },
+            {
+                q: '3. Dalam pemrograman Computer Vision pada Jetson, fungsi utama dari pustaka akselerasi NVIDIA TensorRT adalah...',
+                options: [
+                    'Mengoptimalkan model Deep Learning (misal FP16/INT8) agar berjalan dengan latensi sangat rendah dan FPS tinggi di GPU Jetson',
+                    'Mengatur kecepatan putaran kipas pendingin pada heatsink',
+                    'Memformat kartu microSD menjadi penyimpanan NTFS',
+                    'Menggantikan fungsi kabel Ethernet menjadi sinyal Wi-Fi'
+                ],
+                correct: 0,
+                explanation: 'Luar biasa! TensorRT mengoptimalkan jaringan saraf tiruan (neural network) khusus untuk arsitektur GPU NVIDIA sehingga deteksi objek pada robot berjalan sangat responsif.'
+            },
+            {
+                q: '4. Jika pada simulasi sortir komponen PCB nilai CONFIDENCE_THRESHOLD diatur terlalu tinggi (misal 0.99), dampak apa yang berisiko terjadi di lini produksi?',
+                options: [
+                    'Konveyor akan berputar mundur secara otomatis',
+                    'Komponen yang sebenarnya cacat tetapi memiliki tingkat keyakinan deteksi 0.88 akan dianggap lolos (tidak tersortir)',
+                    'Tegangan GPIO akan naik dari 3.3V menjadi 12V',
+                    'Kamera MIPI CSI akan mati total'
+                ],
+                correct: 1,
+                explanation: 'Analisis yang tajam! Threshold terlalu tinggi (0.99) membuat sistem terlalu ketat sehingga cacat nyata dengan skor keyakinan 85%-95% terlewatkan (False Negative).'
+            },
+            {
+                q: '5. Antarmuka fisik pada Jetson Orin Nano Developer Kit yang dirancang khusus untuk menghubungkan sensor kamera berlatensi sangat rendah langsung ke Image Signal Processor (ISP) adalah...',
+                options: [
+                    'Port DisplayPort 1.2',
+                    'Slot M.2 Key E',
+                    'Konektor MIPI CSI-2',
+                    'Jack DC Barrel 19V'
+                ],
+                correct: 2,
+                explanation: 'Betul! Konektor MIPI CSI-2 (Camera Serial Interface) mengirimkan data piksel kamera langsung ke ISP dan memori GPU tanpa membebani CPU maupun bus USB.'
+            },
+            {
+                q: '6. Pada aplikasi robotika bergerak (Autonomous Mobile Robot / AGV) di gudang industri, kerangka kerja perangkat lunak standar yang sering dijalankan di atas Ubuntu Jetson adalah...',
+                options: [
+                    'ROS 2 (Robot Operating System 2)',
+                    'Microsoft Excel Macro',
+                    'BIOS Legacy Mode',
+                    'Ladder Diagram PLC Dasar'
+                ],
+                correct: 0,
+                explanation: 'Sempurna! ROS 2 berjalan secara native di Ubuntu Linux (NVIDIA JetPack) untuk mengelola komunikasi antar-sensor (LiDAR, Kamera), navigasi SLAM, dan kendali motor robot.'
+            }
+        ];
+
+        let currentQIndex = 0;
+        let quizScore = 0;
+        let questionAnswered = false;
+
+        function renderQuestion() {
+            const q = quizQuestions[currentQIndex];
+            questionAnswered = false;
+
+            document.getElementById('q-number').textContent = currentQIndex + 1;
+            document.getElementById('q-text').textContent = q.q;
+            document.getElementById('q-feedback').classList.add('hidden');
+            document.getElementById('btn-next-question').classList.add('hidden');
+
+            const optionsEl = document.getElementById('q-options');
+            optionsEl.innerHTML = '';
+
+            const letters = ['A', 'B', 'C', 'D'];
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'w-full text-left p-3.5 sm:p-4 rounded-xl bg-slate-950 hover:bg-slate-800/90 border border-slate-800 transition flex items-start gap-3 text-xs sm:text-sm text-slate-200';
+                btn.innerHTML = `
+                    <span class="w-6 h-6 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center font-mono font-bold text-xs shrink-0 text-cyan-400">${letters[idx]}</span>
+                    <span class="leading-relaxed">${opt}</span>
+                `;
+                btn.onclick = () => handleAnswer(idx, btn);
+                optionsEl.appendChild(btn);
+            });
+        }
+
+        function handleAnswer(selectedIndex, selectedBtn) {
+            if (questionAnswered) return;
+            questionAnswered = true;
+
+            const q = quizQuestions[currentQIndex];
+            const isCorrect = selectedIndex === q.correct;
+            const buttons = document.getElementById('q-options').querySelectorAll('button');
+
+            buttons.forEach((btn, idx) => {
+                btn.disabled = true;
+                if (idx === q.correct) {
+                    btn.className = 'w-full text-left p-3.5 sm:p-4 rounded-xl bg-emerald-950/60 border-2 border-nvidia flex items-start gap-3 text-xs sm:text-sm text-white font-semibold';
+                } else if (idx === selectedIndex && !isCorrect) {
+                    btn.className = 'w-full text-left p-3.5 sm:p-4 rounded-xl bg-rose-950/60 border-2 border-rose-500 flex items-start gap-3 text-xs sm:text-sm text-rose-200';
+                }
+            });
+
+            const feedbackEl = document.getElementById('q-feedback');
+            feedbackEl.classList.remove('hidden');
+
+            if (isCorrect) {
+                quizScore += 10;
+                document.getElementById('quiz-score').textContent = quizScore;
+                addXP(20, 'Jawaban kuis benar!');
+                feedbackEl.className = 'mt-5 p-4 rounded-xl border border-nvidia/40 bg-emerald-950/30 text-emerald-200 text-xs sm:text-sm leading-relaxed';
+                feedbackEl.innerHTML = `<strong class="text-nvidia">✔ Jawaban Benar!</strong> ${q.explanation}`;
+            } else {
+                playTone('error');
+                feedbackEl.className = 'mt-5 p-4 rounded-xl border border-rose-500/40 bg-rose-950/30 text-rose-200 text-xs sm:text-sm leading-relaxed';
+                feedbackEl.innerHTML = `<strong class="text-rose-400">✖ Kurang Tepat.</strong> ${q.explanation}`;
+            }
+
+            const nextBtn = document.getElementById('btn-next-question');
+            nextBtn.textContent = currentQIndex < quizQuestions.length - 1 ? 'Pertanyaan Selanjutnya →' : 'Lihat Hasil & Kartu Pencapaian ★';
+            nextBtn.classList.remove('hidden');
+        }
+
+        function nextQuestion() {
+            playTone('click');
+            if (currentQIndex < quizQuestions.length - 1) {
+                currentQIndex++;
+                renderQuestion();
+            } else {
+                showQuizResults();
+            }
+        }
+
+        function showQuizResults() {
+            playTone('success');
+            document.getElementById('quiz-container').classList.add('hidden');
+            document.getElementById('quiz-result-panel').classList.remove('hidden');
+
+            document.getElementById('final-quiz-score').textContent = `${quizScore} / 60`;
+            document.getElementById('final-total-xp').textContent = `${appState.xp} XP`;
+
+            const predEl = document.getElementById('final-predicate');
+            if (quizScore >= 50) {
+                predEl.textContent = 'Sangat Kompeten (Istimewa)';
+                predEl.className = 'text-sm sm:text-base font-extrabold text-nvidia mt-1';
+            } else if (quizScore >= 30) {
+                predEl.textContent = 'Kompeten';
+                predEl.className = 'text-sm sm:text-base font-extrabold text-cyan-400 mt-1';
+            } else {
+                predEl.textContent = 'Perlu Penguatan Konsep';
+                predEl.className = 'text-sm sm:text-base font-extrabold text-amber-400 mt-1';
+            }
+        }
+
+        function resetQuiz() {
+            playTone('click');
+            currentQIndex = 0;
+            quizScore = 0;
+            document.getElementById('quiz-score').textContent = '0';
+            document.getElementById('quiz-result-panel').classList.add('hidden');
+            document.getElementById('quiz-container').classList.remove('hidden');
+            renderQuestion();
+        }
+
+        // Inisialisasi pertanyaan pertama kuis
+        renderQuestion();
+    </script>
+</body>
+</html>
